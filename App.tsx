@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { LayoutDashboard, CalendarDays, BrainCircuit, Menu, X, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, CalendarDays, BrainCircuit, Menu, X, BookOpen, Timer as TimerIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Planner from './components/Planner';
 import Assessment from './components/Assessment';
+import Timer from './components/Timer';
 import { Task, DailyStats, TaskCategory } from './types';
 
 // Mock Initial Data
@@ -23,11 +24,32 @@ const MOCK_STATS: DailyStats[] = [
 ];
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'planner' | 'assessment'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'planner' | 'assessment' | 'timer'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   // Lifted State
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+
+  // 请求通知权限
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // ESC键退出全屏
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const timerElement = document.querySelector('[data-timer-fullscreen="true"]');
+        if (timerElement) {
+          const event = new CustomEvent('exitFullscreen');
+          timerElement.dispatchEvent(event);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -37,6 +59,8 @@ const App: React.FC = () => {
         return <Planner tasks={tasks} setTasks={setTasks} />;
       case 'assessment':
         return <Assessment />;
+      case 'timer':
+        return <Timer />;
       default:
         return <Dashboard stats={MOCK_STATS} todayTasks={tasks} />;
     }
@@ -73,6 +97,7 @@ const App: React.FC = () => {
         <nav className="flex-1 px-4 space-y-2">
           <NavItem id="dashboard" label="仪表盘" icon={LayoutDashboard} />
           <NavItem id="planner" label="学习规划" icon={CalendarDays} />
+          <NavItem id="timer" label="专注倒计时" icon={TimerIcon} />
           <NavItem id="assessment" label="技能自测" icon={BrainCircuit} />
         </nav>
 
@@ -110,6 +135,7 @@ const App: React.FC = () => {
          <nav className="p-4 space-y-2">
             <NavItem id="dashboard" label="仪表盘" icon={LayoutDashboard} />
             <NavItem id="planner" label="学习规划" icon={CalendarDays} />
+            <NavItem id="timer" label="专注倒计时" icon={TimerIcon} />
             <NavItem id="assessment" label="技能自测" icon={BrainCircuit} />
          </nav>
       </aside>
@@ -122,7 +148,10 @@ const App: React.FC = () => {
              <Menu size={24} className="text-slate-600" />
            </button>
            <span className="font-bold text-slate-800">
-             {activeTab === 'dashboard' ? '仪表盘' : activeTab === 'planner' ? '学习规划' : '技能自测'}
+             {activeTab === 'dashboard' ? '仪表盘' :
+              activeTab === 'planner' ? '学习规划' :
+              activeTab === 'timer' ? '专注倒计时' :
+              '技能自测'}
            </span>
            <div className="w-8" /> {/* Spacer */}
         </header>
@@ -134,11 +163,13 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold text-slate-800">
                 {activeTab === 'dashboard' && '欢迎回来，同学！👋'}
                 {activeTab === 'planner' && '你的学习路线图 🗺️'}
+                {activeTab === 'timer' && '专注学习时间 ⏰'}
                 {activeTab === 'assessment' && '测试你的技能 🎯'}
               </h2>
               <p className="text-slate-500">
                 {activeTab === 'dashboard' && "这是你今天的学习动态。"}
                 {activeTab === 'planner' && "一步一个脚印，规划你的成功。"}
+                {activeTab === 'timer' && "使用番茄工作法，提高学习专注度。"}
                 {activeTab === 'assessment' && "利用 AI 发现差距并快速提升。"}
               </p>
             </div>
